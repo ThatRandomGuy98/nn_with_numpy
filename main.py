@@ -14,13 +14,10 @@ nnfs.init()
 
 class DenseLayer:
     def __init__(self, n_inputs, n_neurons) -> None:
-        
         self.weights = 0.1 * np.random.randn(n_inputs, n_neurons)   # small random weights (can be positive or negative)
         self.biases = np.zeros((1, n_neurons))
 
-
     def forward(self, inputs) -> None:
-        # store inputs for use in backprop
         self.inputs = inputs
         self.output = np.dot(inputs, self.weights) + self.biases
 
@@ -29,19 +26,15 @@ class DenseLayer:
         dvalues: gradient of the loss w.r.t. this layer's output
         Computes gradients for weights, biases, and inputs.
         """
-        # gradient w.r.t. weights: X^T * dvalues
-        self.dweights = np.dot(self.inputs.T, dvalues)
-        # gradient w.r.t. biases: sum over samples
-        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
-        # gradient w.r.t. inputs: dvalues * W^T
-        self.dinputs = np.dot(dvalues, self.weights.T)
+        self.dweights = np.dot(self.inputs.T, dvalues)  # gradient w.r.t. weights: X^T * dvalues
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)   # gradient w.r.t. biases: sum over samples
+        self.dinputs = np.dot(dvalues, self.weights.T)  # gradient w.r.t. inputs: dvalues * W^T
 
 
 class ReLUActivation:
     def forward(self, inputs) -> None:
-        # store inputs for backprop (to know where we were <= 0)
         self.inputs = inputs
-        self.output = np.maximum(0, inputs)
+        self.output = np.maximum(0, inputs) # store inputs for backprop (to know where we were <= 0)
 
     def backward(self, dvalues) -> None:
         """
@@ -112,9 +105,7 @@ class CategoricalCrossentropy(Loss):
         self.dinputs = self.dinputs / n_samples     # Average across samples
 
 
-
 X, y = spiral_data(samples=100, classes=3)
-
 dense_1 = DenseLayer(n_inputs=2, n_neurons=3)
 activation_1 = ReLUActivation()
 dense_2 = DenseLayer(n_inputs=3, n_neurons=3)
@@ -124,16 +115,14 @@ loss_fn = CategoricalCrossentropy()
 learning_rate = 1.0
 EPOCHS = 1000
 
+
 for epoch in range(EPOCHS):
 
-    
     dense_1.forward(X)
     activation_1.forward(dense_1.output)
-
     dense_2.forward(activation_1.output)
     activation_2.forward(dense_2.output)
 
-    
     loss = loss_fn.calculate_loss(activation_2.output, y)
     predictions = np.argmax(activation_2.output, axis=1)
     accuracy = np.mean(predictions == y)
@@ -141,17 +130,14 @@ for epoch in range(EPOCHS):
     if epoch % 100 == 0 or epoch == EPOCHS - 1:
         print(f"Epoch {epoch:4d} | Loss: {loss:.4f} | Acc: {accuracy:.4f}")
 
-    # ---- Backward pass ----
     loss_fn.backward(activation_2.output, y)
     dense_2.backward(loss_fn.dinputs)
     activation_1.backward(dense_2.dinputs)
     dense_1.backward(activation_1.dinputs)
 
-    # ---- Parameter update (SGD) ----
     dense_1.weights -= learning_rate * dense_1.dweights
     dense_1.biases  -= learning_rate * dense_1.dbiases
     dense_2.weights -= learning_rate * dense_2.dweights
     dense_2.biases  -= learning_rate * dense_2.dbiases
 
-
-print("Final predictions (first 10):", predictions[:10])
+print(f"--- Final predictions (first 10): {predictions[:10]} ---")
